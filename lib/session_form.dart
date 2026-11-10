@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'study_database.dart';
 
-/// Form used to add a new study session or to edit an existing one.
-/// If [session] is null the form adds a new record, otherwise it edits it.
-/// (Based on the lecturer's NewBudgetPage, with edit mode added.)
+// Form to add a new session or edit an old one.
+// If session is null it adds, if not it edits.
+// Based on the lecturer's form, I added edit mode.
 class SessionFormPage extends StatefulWidget {
   const SessionFormPage({super.key, this.session});
 
-  // The saved record to edit (a row from SQLite), or null when adding.
+  // The record to edit (null when adding).
   final Map<String, Object?>? session;
 
   @override
@@ -32,13 +32,13 @@ class _SessionFormPageState extends State<SessionFormPage> {
     'Other',
   ];
 
-  // True when we are editing a saved record.
+  // True when we are editing.
   bool get _isEditing => widget.session != null;
 
   @override
   void initState() {
     super.initState();
-    // When editing, fill the form with the saved values first.
+    // When editing, put the old values in the fields.
     final session = widget.session;
     if (session != null) {
       _titleController.text = session['title'] as String;
@@ -57,7 +57,7 @@ class _SessionFormPageState extends State<SessionFormPage> {
   }
 
   Future<void> _confirmSession() async {
-    // Only ask for confirmation after all fields pass validation.
+    // Check the fields first, then ask for confirmation.
     if (!_formKey.currentState!.validate()) return;
 
     final confirmed = await showDialog<bool>(
@@ -81,7 +81,7 @@ class _SessionFormPageState extends State<SessionFormPage> {
         ],
       ),
     );
-    // Cancel (or tapping outside) leaves the record unchanged.
+    // Cancel means no change.
     if (confirmed != true || !mounted) return;
 
     setState(() => _isSaving = true);
@@ -92,7 +92,7 @@ class _SessionFormPageState extends State<SessionFormPage> {
       final notes = _notesController.text.trim();
 
       if (_isEditing) {
-        // Update the same row in SQLite using its id.
+        // Update the row that has this id.
         final rows = await StudyDatabase.instance.updateSession(
           id: widget.session!['id'] as int,
           title: title,
@@ -115,12 +115,12 @@ class _SessionFormPageState extends State<SessionFormPage> {
     }
 
     if (!mounted) return;
-    // Send the result back to the main screen, then show a message.
+    // Go back to the main screen and show a message.
     final messenger = ScaffoldMessenger.of(context);
     if (saved) {
       Navigator.of(context).pop(true);
     } else {
-      // Stay on the form so the user does not lose what was typed.
+      // Stay on the form so the typed data is not lost.
       setState(() => _isSaving = false);
     }
     messenger.showSnackBar(
@@ -146,8 +146,8 @@ class _SessionFormPageState extends State<SessionFormPage> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          // Show the error message as soon as the user changes a field,
-          // and hide it again once the value is fixed.
+          // Show errors while the user types,
+          // and remove them when the value is correct.
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
@@ -187,7 +187,7 @@ class _SessionFormPageState extends State<SessionFormPage> {
                 controller: _durationController,
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  // Duration must be a whole number of minutes, 1 to 600.
+                  // Duration must be a whole number from 1 to 600.
                   final minutes = int.tryParse(value?.trim() ?? '');
                   if (minutes == null) return 'Enter the duration as a number';
                   if (minutes <= 0) return 'Duration must be greater than 0';

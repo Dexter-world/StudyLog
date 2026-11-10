@@ -1,13 +1,12 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-/// Opens the local SQLite database and has the insert, read, update and delete
-/// methods for study sessions.
-/// (Structure based on the lecturer's example BudgetDatabase class.)
+// Opens the SQLite database and has insert, read, update and delete.
+// Based on the lecturer's BudgetDatabase class.
 class StudyDatabase {
   StudyDatabase._();
 
-  // One shared object so the whole app uses the same database connection.
+  // One shared object so the app uses one database connection.
   static final StudyDatabase instance = StudyDatabase._();
   static const _databaseName = 'study_log.db';
   static const _tableName = 'study_sessions';
@@ -17,8 +16,7 @@ class StudyDatabase {
   Future<Database> get database async {
     if (_database != null) return _database!;
 
-    // If the database file does not exist yet, openDatabase creates it
-    // and onCreate builds the table.
+    // Create the database file and table if they do not exist yet.
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, _databaseName);
     _database = await openDatabase(
@@ -40,7 +38,7 @@ class StudyDatabase {
     return _database!;
   }
 
-  // CREATE: add a new study session. Returns the new row id.
+  // CREATE: add a session. Returns the new id.
   Future<int> insertSession({
     required String title,
     required String subject,
@@ -63,7 +61,7 @@ class StudyDatabase {
     required int offset,
   }) async {
     final db = await database;
-    // LIMIT and OFFSET make SQLite return only the rows for one page.
+    // LIMIT and OFFSET give only the rows of one page.
     return db.query(
       _tableName,
       orderBy: 'created_at DESC, id DESC',
@@ -72,7 +70,7 @@ class StudyDatabase {
     );
   }
 
-  // Count all sessions so we can work out the total number of pages.
+  // Count the sessions to know how many pages we need.
   Future<int> getSessionCount() async {
     final db = await database;
     final result = await db.rawQuery(
@@ -81,8 +79,8 @@ class StudyDatabase {
     return (result.first['count'] as num).toInt();
   }
 
-  // UPDATE: change the fields of one session. created_at is not changed.
-  // Returns how many rows were updated (1 if it worked).
+  // UPDATE: change one session (created_at stays the same).
+  // Returns how many rows were changed.
   Future<int> updateSession({
     required int id,
     required String title,
@@ -104,7 +102,7 @@ class StudyDatabase {
     );
   }
 
-  // DELETE: remove one session by its id.
+  // DELETE: remove one session by id.
   Future<int> deleteSession(int id) async {
     final db = await database;
     return db.delete(_tableName, where: 'id = ?', whereArgs: [id]);

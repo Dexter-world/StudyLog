@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'session_form.dart';
 import 'study_database.dart';
 
-/// Shows the saved study sessions and opens the form to add or edit one.
-/// (Based on the lecturer's MainScreen, with edit and title added.)
+// Main screen: shows the list of study sessions.
+// Based on the lecturer's example, I added edit and title.
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -24,11 +24,11 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    // Load the saved sessions as soon as the main screen appears.
+    // Load the sessions when the screen opens.
     _loadSessions();
   }
 
-  // Read one page from SQLite and update the list, or show an error.
+  // Get one page of data from SQLite.
   Future<void> _loadSessions({int page = 1}) async {
     setState(() {
       _isLoading = true;
@@ -39,8 +39,8 @@ class _MainScreenState extends State<MainScreen> {
     try {
       final sessionCount = await StudyDatabase.instance.getSessionCount();
       final totalPages = (sessionCount / _pageSize).ceil().clamp(1, 1 << 31);
-      // If the page no longer exists (for example after deleting the last
-      // record on it), move to the nearest valid page.
+      // If the page does not exist anymore (after delete),
+      // go to the nearest page.
       final targetPage = page.clamp(1, totalPages);
       final sessions = await StudyDatabase.instance.getSessions(
         limit: _pageSize,
@@ -62,8 +62,8 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // Testing helper: adds 21 sample sessions so pagination can be tested quickly.
-  // It is only used for testing and demonstration (see README).
+  // Test button: adds 21 sessions to test the pages.
+  // Only for testing (see README).
   Future<void> _addTestSessions() async {
     for (var i = 1; i <= 21; i++) {
       await StudyDatabase.instance.insertSession(
@@ -77,17 +77,17 @@ class _MainScreenState extends State<MainScreen> {
     await _loadSessions(page: 1);
   }
 
-  // Open the form. Pass a session to edit it, or nothing to add a new one.
+  // Open the form. With a session = edit, without = add.
   Future<void> _openSessionForm({Map<String, Object?>? session}) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (context) => SessionFormPage(session: session),
       ),
     );
-    // The form returns true only after SQLite saved the record.
+    // The form returns true if the record was saved.
     if (saved != true) return;
     if (session == null) {
-      // New record: go to page 1 because newest records are shown first.
+      // New record: go to page 1 (newest first).
       await _loadSessions(page: 1);
     } else {
       // Edited record: stay on the same page.
@@ -169,7 +169,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           FilledButton(
             onPressed: () {
-              // Close the details dialog first, then open the edit form.
+              // Close the dialog, then open the edit form.
               Navigator.of(context).pop();
               _openSessionForm(session: session);
             },
@@ -199,7 +199,7 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('StudyLog'),
         actions: [
-          // Testing button (flask icon): adds 21 sample sessions.
+          // Test button (flask icon).
           IconButton(
             tooltip: 'Add 21 sample sessions (testing)',
             onPressed: _isLoading ? null : _addTestSessions,
@@ -217,8 +217,7 @@ class _MainScreenState extends State<MainScreen> {
       body: Column(
         children: [
           Expanded(child: _buildBody()),
-          // The page controls stay visible, but both buttons are disabled
-          // when there is only one page or no records.
+          // Page buttons are always shown, but disabled if not needed.
           if (!_isLoading && !_loadFailed) _buildPaginationControls(),
         ],
       ),
@@ -284,7 +283,7 @@ class _MainScreenState extends State<MainScreen> {
         final session = _sessions[index];
 
         return ListTile(
-          // Tap = details (with Edit), long press = delete.
+          // Tap = details, long press = delete.
           onTap: () => _showSessionDetails(session),
           onLongPress: () => _confirmDeleteSession(session),
           leading: const CircleAvatar(child: Icon(Icons.menu_book)),
